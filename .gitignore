@@ -1,0 +1,47 @@
+# Android build files
+*.apk
+*.ap_
+*.aab
+
+# Files for ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+/generated/
+/build/
+/captures/
+/.externalNativeBuild/
+
+# Gradle files
+.gradle/
+build/
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Signing keys
+*.jks
+
+# IntelliJ IDEA / Android Studio
+.idea/
+*.iml
+*.iws
+.idea_modules/
+
+# User-specific files
+*.swp
+*.swo
+*.user
+*.lock
+
+# Logs
+*.log
+
+# Kotlin specific
+*.kotlin_module
+
+# Others
+.DS_Store

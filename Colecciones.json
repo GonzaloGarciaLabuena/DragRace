@@ -1,0 +1,93 @@
+{
+  "users": {
+    "gonzalo": {
+      "nombre": "Gonzalo",
+      "rankingId": "rankingGonzalo"
+    },
+    "alberto": {
+      "nombre": "Alberto",
+      "rankingId": "rankingAlberto"
+    }
+  },
+  
+  "rankings": {
+    "rankingGonzalo": {
+      "tablas": ["usa15", "usa16", "usa17"],
+      "puntos": {
+        "usa15": {
+          "id0": [10, 9, 8, 10],
+          "id1": [7, 6, 6, 5],
+          "id3": [9, 8, 7, 9]
+        },
+        "usa16": {
+          "id0": [8, 8, 9, 7],
+          "id1": [6, 7, 5, 6],
+          "id3": [9, 9, 10, 10]
+        }
+      }
+    },
+    "rankingAlberto": {
+      "tablas": ["usa15", "usa16", "esp1"],
+      "puntos": {
+        "usa15": {
+          "id0": [9, 9, 7, 10],
+          "id1": [8, 7, 6, 5],
+          "id3": [7, 8, 7, 8]
+        },
+        "esp1": {
+          "id5": [6, 7, 8, 7],
+          "id6": [8, 8, 9, 10]
+        }
+      }
+    }
+  },
+  
+  "seasons": {
+    "usa15": {
+      "nombre": "RuPaul's Drag Race Season 15",
+      "franquicia": "USA",
+      "año": 2023,
+      "queens": ["id0", "id1", "id3"]
+    },
+    "usa16": {
+      "nombre": "RuPaul's Drag Race Season 16",
+      "franquicia": "USA",
+      "año": 2024,
+      "queens": ["id0", "id1", "id3"]
+    },
+    "esp1": {
+      "nombre": "Drag Race España Season 1",
+      "franquicia": "España",
+      "año": 2022,
+      "queens": ["id5", "id6"]
+    }
+  },
+  
+  "queens": {
+    "id0": {
+      "nombre": "Sasha Colby",
+      "temporadas": ["usa15", "usa16"],
+      "imagen_url": "https://ejemplo.com/sasha_colby.jpg"
+    },
+    "id1": {
+      "nombre": "MIB",
+      "temporadas": ["usa15", "usa16"],
+      "imagen_url": "https://ejemplo.com/mib.jpg"
+    },
+    "id3": {
+      "nombre": "Lux Noir London",
+      "temporadas": ["usa15", "usa16"],
+      "imagen_url": "https://ejemplo.com/lux_noir_london.jpg"
+    },
+    "id5": {
+      "nombre": "Hornella Góngora",
+      "temporadas": ["esp1"],
+      "imagen_url": "https://ejemplo.com/hornella_gongora.jpg"
+    },
+    "id6": {
+      "nombre": "Killer Queen",
+      "temporadas": ["esp1"],
+      "imagen_url": "https://ejemplo.com/killer_queen.jpg"
+    }
+  }
+}
