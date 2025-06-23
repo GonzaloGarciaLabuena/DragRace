@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,6 +8,13 @@ plugins {
 
     // Add the Google services Gradle plugin
     id("com.google.gms.google-services")
+}
+
+val localPropertiesFile = rootProject.file("local.properties")
+val localProperties = Properties()
+
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
 }
 
 android {
@@ -19,6 +29,14 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val appKey = localProperties.getProperty("APPKEY", "default_appkey_no_se_encontro")
+        val appSecret = localProperties.getProperty("APPSECRET", "default_appsecret_no_se_encontro")
+        val dropboxRefreshToken = localProperties.getProperty("DROPBOX_REFRESH_TOKEN", "default_token_no_se_encontro")
+
+        buildConfigField("String", "APPKEY", "\"$appKey\"")
+        buildConfigField("String", "APPSECRET", "\"$appSecret\"")
+        buildConfigField("String", "DROPBOX_REFRESH_TOKEN", "\"$dropboxRefreshToken\"")
     }
 
     buildTypes {
@@ -39,6 +57,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -53,6 +72,9 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.media3.common.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.runtime.livedata)
+    implementation(libs.androidx.recyclerview)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -76,5 +98,11 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services")
+    implementation("com.dropbox.core:dropbox-core-sdk:5.4.6")
+
+
+    implementation("com.github.bumptech.glide:glide:4.15.1")
+    implementation("androidx.navigation:navigation-compose:2.7.2")
+
 }

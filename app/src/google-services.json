@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "45072138169",
+    "project_id": "dragraceppe-8b096",
+    "storage_bucket": "dragraceppe-8b096.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:45072138169:android:5f836609595fe48fedc068",
+        "android_client_info": {
+          "package_name": "com.gonchimonchi.dragrace"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDzgD_NR10ZGJdsmyqYuD4OWbVZmfKNcNk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
