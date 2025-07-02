@@ -31,5 +31,9 @@
         <!-- ✅ Registro correcto de UploadActivity -->
 
         <activity android:name=".activity.TablaRankingActivity"/>
+        <activity android:name=".activity.AddReinaActivity" />
+        <activity android:name=".activity.DeleteReinaActivity" />
+        <activity android:name=".activity.GestionarTemporadaActivity"
+            android:windowSoftInputMode="adjustResize"/>
     </application>
 </manifest>

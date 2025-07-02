@@ -17,7 +17,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             DragRaceTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    AppNavHost(Modifier.padding(innerPadding))
+                    HomeScreen(Modifier.padding(innerPadding))
                 }
             }
         }

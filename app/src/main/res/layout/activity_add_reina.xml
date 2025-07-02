@@ -1,0 +1,58 @@
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/imgReina"
+        android:layout_width="250dp"
+        android:layout_height="250dp"
+        android:layout_above="@id/editNombre"
+        android:layout_centerHorizontal="true"
+        android:layout_margin="15dp"
+        android:contentDescription="Imagen"
+        android:clickable="true"
+        android:focusable="true"
+        android:src="@drawable/queen_not_found" />
+
+    <EditText
+        android:id="@+id/editNombre"
+        android:layout_width="250dp"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_centerInParent="true"
+        android:layout_margin="15dp"
+        android:background="@android:drawable/edit_text"
+        android:gravity="center"
+        android:hint="Nombre"
+        android:inputType="textPersonName"
+        android:maxWidth="250dp"
+        android:minWidth="250dp"
+        android:ellipsize="end"
+        android:singleLine="true" />
+
+
+    <TextView
+        android:id="@+id/editSeason"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/editNombre"
+        android:layout_centerHorizontal="true"
+        android:layout_margin="15dp"
+        android:background="@android:drawable/edit_text"
+        android:clickable="true"
+        android:focusable="false"
+        android:gravity="center"
+        android:hint="Seleccionar temporada"
+        android:minWidth="250dp" />
+
+    <Button
+        android:id="@+id/buttonSubirReina"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/editSeason"
+        android:layout_centerHorizontal="true"
+        android:layout_margin="15dp"
+        android:enabled="false"
+        android:text="Subir reina" />
+</RelativeLayout>

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
+    android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:padding="8dp">
+    android:padding="8dp"
+    android:gravity="center_vertical">
 
     <ImageView
         android:id="@+id/img"
@@ -16,37 +16,23 @@
         android:id="@+id/name"
         android:layout_width="150dp"
         android:layout_height="80dp"
-        android:paddingLeft="5dp"
-        android:paddingRight="5dp"
-        android:gravity="center_vertical|center_horizontal"
+        android:gravity="center"
         android:maxLines="2"
         android:textSize="18sp"
-        android:textColor="@android:color/black"
-        android:text="Nombre"
-    />
+        android:textColor="@android:color/black" />
 
     <TextView
         android:id="@+id/puntuacion"
         android:layout_width="70dp"
         android:layout_height="80dp"
-        android:paddingLeft="5dp"
-        android:paddingRight="5dp"
-        android:gravity="center_vertical|center_horizontal"
+        android:gravity="center"
         android:textSize="18sp"
-        android:textColor="@android:color/black"
-        android:text="5.000"
-    />
+        android:textColor="@android:color/black" />
 
     <LinearLayout
         android:id="@+id/dynamicCellsContainer"
         android:layout_width="wrap_content"
         android:layout_height="80dp"
-        android:paddingLeft="5dp"
-        android:paddingRight="5dp"
         android:orientation="horizontal"
-        android:gravity="center_vertical|center_horizontal"
-        android:textSize="18sp"
-        android:paddingStart="8dp"
-    />
-
+        android:paddingStart="8dp" />
 </LinearLayout>
