@@ -15,63 +15,39 @@ import com.gonchimonchi.dragrace.R
 class GestionarCapituloAdapter(
     private val capitulos: MutableList<String>,
     private val onSaveClick: (position: Int, nuevoTexto: String) -> Unit,
-    private val onDeleteClick: (Int) -> Unit,
-    private val onAddClick: () -> Unit
-) : RecyclerView.Adapter<GestionarCapituloAdapter.BaseViewHolder>() {
+    private val onDeleteClick: (Int) -> Unit
+) : RecyclerView.Adapter<GestionarCapituloAdapter.CapituloViewHolder>() {
 
-    companion object {
-        private const val VIEW_TYPE_CAPITULO = 0
-        private const val VIEW_TYPE_BOTON = 1
-    }
-
-    open inner class BaseViewHolder(view: View) : RecyclerView.ViewHolder(view)
-
-    inner class CapituloViewHolder(view: View) : BaseViewHolder(view) {
+    inner class CapituloViewHolder(view: View) :  RecyclerView.ViewHolder(view) {
         val editCapitulo: EditText = view.findViewById(R.id.editCapitulo)
         val btnSave: ImageButton = view.findViewById(R.id.btnSave)
         val btnDelete: ImageButton = view.findViewById(R.id.btnDelete)
+        val numeroCapitulo: TextView = view.findViewById(R.id.numeroCapitulo)
     }
 
-    inner class BotonViewHolder(view: View) : BaseViewHolder(view) {
-        val btnAdd: ImageButton = view.findViewById(R.id.btnAddCapitulo)
+    override fun getItemCount() = capitulos.size
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CapituloViewHolder {
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_fila_capitulo, parent, false)
+        return CapituloViewHolder(view)
     }
 
-    override fun getItemCount() = capitulos.size + 1
+    override fun onBindViewHolder(holder: CapituloViewHolder, position: Int) {
+        val capitulo = capitulos[position]
+        holder.numeroCapitulo.text = (position + 1).toString()
 
-    override fun getItemViewType(position: Int): Int {
-        return if (position == capitulos.size) VIEW_TYPE_BOTON else VIEW_TYPE_CAPITULO
-    }
+        holder.editCapitulo.setText(capitulo)
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BaseViewHolder {
-        return if (viewType == VIEW_TYPE_CAPITULO) {
-            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_fila_capitulo, parent, false)
-            CapituloViewHolder(view)
-        } else {
-            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_add_capitulo, parent, false)
-            BotonViewHolder(view)
+        holder.btnSave.setOnClickListener {
+            val nuevoTexto = holder.editCapitulo.text.toString()
+            onSaveClick(position, nuevoTexto)
+            notifyItemChanged(position)
         }
-    }
 
-    override fun onBindViewHolder(holder: BaseViewHolder, position: Int) {
-        if (holder is CapituloViewHolder) {
-            val capitulo = capitulos[position]
-            holder.editCapitulo.setText(capitulo)
-
-            holder.btnSave.setOnClickListener {
-                val nuevoTexto = holder.editCapitulo.text.toString()
-                onSaveClick(position, nuevoTexto)
-                notifyItemChanged(position)
-            }
-
-            holder.btnDelete.setOnClickListener {
-                onDeleteClick(position)
-                notifyItemRemoved(position)
-            }
-            holder.editCapitulo.requestFocus()
-        } else if (holder is BotonViewHolder) {
-            holder.btnAdd.setOnClickListener {
-                onAddClick()
-            }
+        holder.btnDelete.setOnClickListener {
+            onDeleteClick(position)
+            notifyItemRemoved(position)
         }
+        holder.editCapitulo.requestFocus()
     }
 }

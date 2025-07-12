@@ -12,10 +12,14 @@ import com.gonchimonchi.dragrace.Season
 import com.gonchimonchi.dragrace.calls.*
 
 import androidx.lifecycle.viewModelScope
+import com.gonchimonchi.dragrace.ColorPalette
 import com.gonchimonchi.dragrace.Punto
 import kotlinx.coroutines.launch
 
 class TemporadaViewModel (): ViewModel() {
+    private val _season = MutableLiveData<Season>()
+    val season: LiveData<Season> = _season
+
     private val _seasons = MutableLiveData<List<Season>>()
     val seasons: LiveData<List<Season>> = _seasons
 
@@ -27,6 +31,15 @@ class TemporadaViewModel (): ViewModel() {
 
     private val _addCapituloStatus = MutableLiveData<Result<String>>()
     val addCapituloStatus: LiveData<Result<String>> = _addCapituloStatus
+
+    fun addSeason(season: Season, idDocumento: String, onResult: (Result<Season>) -> Unit) {
+        viewModelScope.launch {
+            addNewTemporada(season, idDocumento) { result ->
+                onResult(result)
+            }
+        }
+    }
+
 
     fun obtenerSeasonCompleta(season: Season){
         viewModelScope.launch {
@@ -87,4 +100,53 @@ class TemporadaViewModel (): ViewModel() {
             updateCapituloTemporada(season, onResult)
         }
     }
+
+    fun actualizarPaletaTemporada(
+        season: Season,
+        paleta: ColorPalette,
+        onResult: (Result<Unit>) -> Unit
+    ) {
+        val id = season.id
+        if (id == null) {
+            onResult(Result.failure(Exception("ID de temporada no disponible")))
+            return
+        }
+
+        // No hace falta lanzar coroutine porque la función usa callbacks
+        actualizarPaletaTemporadaFB(id, paleta) { result ->
+            onResult(result)
+        }
+    }
+
+
+
+    fun copiarTemporada(){
+        viewModelScope.launch {
+            copiarDocumento(
+                db = FirebaseFirestore.getInstance(),
+                coleccion = "season",
+                idOriginal = "usa15",
+                idNuevo = "S15",
+            ) { exito, error ->
+                if (exito) {
+                    Log.i("Firebase", "Documento copiado correctamente")
+                } else {
+                    Log.e("Firebase", "Error copiando documento", error)
+                }
+            }
+            copiarDocumento(
+                db = FirebaseFirestore.getInstance(),
+                coleccion = "season",
+                idOriginal = "usa17",
+                idNuevo = "S17",
+            ) { exito, error ->
+                if (exito) {
+                    Log.i("Firebase", "Documento copiado correctamente")
+                } else {
+                    Log.e("Firebase", "Error copiando documento", error)
+                }
+            }
+        }
+    }
+
 }

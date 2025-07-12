@@ -1,6 +1,7 @@
 package com.gonchimonchi.dragrace.activity
 
 import TemporadaAdapter
+import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
@@ -29,6 +30,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.gonchimonchi.dragrace.Season
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.io.FileOutputStream
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 class AddReinaActivity : AppCompatActivity() {
     private lateinit var viewModelDropbox: DropboxViewModel
@@ -59,6 +64,35 @@ class AddReinaActivity : AppCompatActivity() {
         val watcher = object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 verificarCampos()
+                val nombre = editNombre.text.toString().trim()
+                val temporada = editSeason.text.toString().trim()
+                Log.i("ADD", "TextWatcher $nombre $temporada")
+
+                if (nombre.isNotBlank() && temporada.isNotBlank()) {
+                    Log.i("ADD", "TextWatcher $temporadaSeleccionada")
+                    val seasonId = temporadaSeleccionada.id.toString().trim()
+                    val nombreFormateado = nombre.replace(" ", "") + seasonId + "CastMug"
+                    Log.i("ADD", "TextWatcher $nombreFormateado")
+                    lifecycleScope.launch {
+                        val url = obtenerUrlImagen(nombreFormateado)
+                        if (url != null) {
+                            val imgTemp = descargarImagen(url, this@AddReinaActivity)
+                            if (imgTemp != null) {
+                                fileImgDispositivo = imgTemp
+                                imgSubida = true
+                                Glide.with(this@AddReinaActivity)
+                                    .load(url)
+                                    .placeholder(R.drawable.queen_not_found)
+                                    .error(R.drawable.queen_error)
+                                    .into(imgReina)
+                                verificarCampos()
+                                Log.i("ADD", "Imagen autocompletada desde la Wiki.")
+                            }
+                        } else {
+                            Log.w("ADD", "No se encontró imagen en la Wiki para $nombreFormateado")
+                        }
+                    }
+                }
             }
 
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -77,8 +111,8 @@ class AddReinaActivity : AppCompatActivity() {
         editSeason.setOnClickListener {
             if (temporadasCargadas.isNotEmpty()) {
                 mostrarBottomSheetTemporadas(temporadasCargadas) { seleccionada ->
-                    editSeason.text = seleccionada.nombre
                     temporadaSeleccionada = seleccionada
+                    editSeason.text = temporadaSeleccionada.nombre
                 }
             } else {
                 Toast.makeText(this, "Temporadas no cargadas", Toast.LENGTH_SHORT).show()
@@ -86,23 +120,41 @@ class AddReinaActivity : AppCompatActivity() {
         }
 
         buttonSubirReina.setOnClickListener {
-            val nombre = editNombre.text.toString()
-            val season = editSeason.text.toString()
-            if(nombre.trim().isEmpty()){
+            val nombre = editNombre.text.toString().trim()
+            val season = editSeason.text.toString().trim()
+
+            if(nombre.isEmpty()){
                 Toast.makeText(this, "Por favor, introduce un nombre", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
-            }else if(season.trim().isEmpty()){
+            }
+            if(season.isEmpty()){
                 Toast.makeText(this, "Por favor, introduce una temporada", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+
+            val seasonId = temporadaSeleccionada.id.toString().trim()
+            val nombreFormateado = nombre.replace(" ", "") + seasonId + "CastMug"
+
             lifecycleScope.launch {
-                val link = addImgDropbox(nombre, temporadaSeleccionada)
-                if(link == null){
+                val fileParaSubir = fileImgDispositivo
+                if (fileParaSubir == null) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@AddReinaActivity, "No se pudo obtener la imagen", Toast.LENGTH_SHORT).show()
+                    }
                     return@launch
                 }
-                addNuevaReina(nombre, temporadaSeleccionada, link)
+
+                val link = viewModelDropbox.subirImagen(fileParaSubir, temporadaSeleccionada.id.toString(), nombreFormateado)
+                if (link != null) {
+                    addNuevaReina(nombre, temporadaSeleccionada, link)
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@AddReinaActivity, "Error al subir imagen", Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         }
+
     }
 
     fun verificarCampos() {
@@ -119,7 +171,7 @@ class AddReinaActivity : AppCompatActivity() {
             if (localFile != null) {
                 Glide.with(this)
                     .load(uri)
-                    //.placeholder(R.drawable.ic_placeholder)
+                    .placeholder(R.drawable.queen_not_found)
                     .error(R.drawable.queen_error)
                     .into(imgReina) // img es tu ImageView
                 imgSubida = true
@@ -183,6 +235,40 @@ class AddReinaActivity : AppCompatActivity() {
         }
 
         dialog.show()
+    }
+
+    suspend fun obtenerUrlImagen(nombreArchivo: String): String? {
+        val url = "https://rupaulsdragrace.fandom.com/api.php?" +
+                "action=query&format=json&list=allimages&ailimit=1&" +
+                "aiprefix=$nombreArchivo"
+
+        val client = OkHttpClient()
+        val request = Request.Builder().url(url).build()
+        return withContext(Dispatchers.IO) {
+            val response = client.newCall(request).execute()
+            val body = response.body?.string() ?: return@withContext null
+
+            val json = JSONObject(body)
+            val images = json.getJSONObject("query").getJSONArray("allimages")
+            if (images.length() > 0) {
+                images.getJSONObject(0).getString("url")
+            } else null
+        }
+    }
+
+    suspend fun descargarImagen(url: String, context: Context): File? {
+        val client = OkHttpClient()
+        val request = Request.Builder().url(url).build()
+        return withContext(Dispatchers.IO) {
+            val response = client.newCall(request).execute()
+            val inputStream = response.body?.byteStream() ?: return@withContext null
+
+            val tempFile = File(context.cacheDir, "imagen.jpg")
+            FileOutputStream(tempFile).use { output ->
+                inputStream.copyTo(output)
+            }
+            tempFile
+        }
     }
 
     private fun uriToFile(uri: Uri): File? {

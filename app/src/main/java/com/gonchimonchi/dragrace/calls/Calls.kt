@@ -4,6 +4,7 @@ import androidx.annotation.OptIn
 import com.google.firebase.firestore.FirebaseFirestore
 import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
+import com.gonchimonchi.dragrace.ColorPalette
 import com.gonchimonchi.dragrace.Punto
 import com.gonchimonchi.dragrace.Reina
 import com.gonchimonchi.dragrace.Season
@@ -231,13 +232,25 @@ suspend fun getSeason(season: Season): List<Season> = coroutineScope {
 
         // Ahora carga las reinas con sus datos completos
         val reinas = getReinasByIds(listaIds)
-
+        Log.d("TablaRanking", "RESULT CALL ${result}")
+        val mapaColores = result.get("paleta") as? Map<String, String>
+        val paleta = mapaColores?.let {
+            ColorPalette(
+                dominante = it["dominante"] ?: "#000000",
+                vibrante = it["vibrante"] ?: "#000000",
+                suave = it["suave"] ?: "#000000",
+                oscuro = it["oscuro"] ?: "#000000",
+                alternativo = it["alternativo"] ?: "#000000"
+            )
+        }
+        Log.d("TablaRanking", "PALETA CALL ${paleta}")
         val seasonObj = Season(
             id = result.id,
             franquicia = franquicia,
             nombre = nombre,
             year = year,
             capitulos = capitulos,
+            paleta = paleta,
             reinas = reinas as MutableList<Reina>? // Aquí sí puedes poner List<Reina>
         )
         Log.i("FirestoreQuery", "📘 Temporada recuperada: ${seasonObj}")
@@ -298,12 +311,24 @@ suspend fun getSeasonsVacia(): List<Season> = coroutineScope {
         Log.i("FirestoreQuery", "📘 Temporadas disponibles: ${result.size()}")
 
         result.documents.mapNotNull { doc ->
+            val mapaColores = doc.get("paleta") as? Map<String, String>
+            val paleta = mapaColores?.let {
+                ColorPalette(
+                    dominante = it["dominante"] ?: "#000000",
+                    vibrante = it["vibrante"] ?: "#000000",
+                    suave = it["suave"] ?: "#000000",
+                    oscuro = it["oscuro"] ?: "#000000",
+                    alternativo = it["alternativo"] ?: "#000000"
+                )
+            }
+
             Season(
                 id = doc.id,
                 franquicia = doc.getString("franquicia"),
                 nombre = doc.getString("nombre"),
                 year = doc.getLong("year")?.toInt(),
                 capitulos = doc.get("capitulos") as? List<String>,
+                paleta = paleta,
                 reinas = null // o puedes poner `emptyList()`
             )
         }
@@ -368,4 +393,79 @@ fun updateCapituloTemporada(
             Log.d("Firestore", "Error al actualizar ranking: ${e.message}")
             onResult(Result.failure(e))
         }
+}
+
+@OptIn(UnstableApi::class)
+fun addNewTemporada(
+    season: Season,
+    idDocumento: String,
+    onResult: (Result<Season>) -> Unit
+) {
+    val db = FirebaseFirestore.getInstance()
+    val seasonMap = mapOf(
+        "franquicia" to season.franquicia,
+        "nombre" to season.nombre,
+        "reinas" to season.reinas,
+        "capitulos" to season.capitulos,
+        "year" to season.year
+    )
+    db.collection("season")
+        .document(idDocumento)
+        .set(seasonMap)
+        .addOnSuccessListener {
+            val seasonConId = season.copy(id = idDocumento)
+            onResult(Result.success(seasonConId))
+        }
+        .addOnFailureListener { e ->
+            Log.d("Firestore", "Error al crear temporada: ${e.message}")
+            onResult(Result.failure(e))
+        }
+}
+
+fun actualizarPaletaTemporadaFB(
+    seasonId: String,
+    paleta: ColorPalette,
+    onResult: (Result<Unit>) -> Unit
+) {
+    val db = FirebaseFirestore.getInstance()
+    val docRef = db.collection("season").document(seasonId)
+
+    docRef.update("paleta", paleta)
+        .addOnSuccessListener {
+            onResult(Result.success(Unit))
+        }
+        .addOnFailureListener { e ->
+            onResult(Result.failure(e))
+        }
+}
+
+
+
+///Funciones extraordinaraias ////
+fun copiarDocumento(
+    db: FirebaseFirestore,
+    coleccion: String,
+    idOriginal: String,
+    idNuevo: String,
+    onComplete: (Boolean, Exception?) -> Unit
+) {
+    val docOriginalRef = db.collection(coleccion).document(idOriginal)
+    val docNuevoRef = db.collection(coleccion).document(idNuevo)
+
+    docOriginalRef.get()
+        .addOnSuccessListener { documentSnapshot ->
+            if (documentSnapshot.exists()) {
+                val data = documentSnapshot.data
+                if (data != null) {
+                    docNuevoRef.set(data)
+                        .addOnSuccessListener { onComplete(true, null) }
+                        .addOnFailureListener { e -> onComplete(false, e) }
+                } else {
+                    onComplete(false, Exception("Documento original sin datos"))
+                }
+            } else {
+                onComplete(false, Exception("Documento original no existe"))
+            }
+        }
+        .addOnFailureListener { e -> onComplete(false, e) }
 }

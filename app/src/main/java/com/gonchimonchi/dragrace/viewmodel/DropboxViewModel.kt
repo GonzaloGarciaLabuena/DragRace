@@ -16,9 +16,8 @@ class DropboxViewModel() : ViewModel() {
         Log.i("DRAGRACE", "Dropboxviewmodel: subirImagen")
         return withContext(Dispatchers.IO) {
             try {
-                val nuevoNombre = nombre.replace("\\s+".toRegex(), "_") + "_${season}.jpg"
                 Log.i("DRAGRACE", "Dropboxviewmodel: file encontrado ${file}")
-                val dropboxPath = "/DragRaceImages/${season}/${nuevoNombre}"
+                val dropboxPath = "/DragRaceImages/${season}/${nombre}"
                 Log.i("DRAGRACE", "Dropboxviewmodel: dropbox path ${dropboxPath}")
                 dropboxHelper.uploadFileAndGetDirectLink(file, dropboxPath)
             } catch (e: Exception) {

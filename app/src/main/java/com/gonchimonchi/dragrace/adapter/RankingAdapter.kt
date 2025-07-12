@@ -24,7 +24,10 @@ import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
 import androidx.core.graphics.toColorInt
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.gonchimonchi.dragrace.ColorPalette
+import com.gonchimonchi.dragrace.ui.Utils
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import kotlin.collections.filter
 
 
 class RankingAdapter(
@@ -33,11 +36,20 @@ class RankingAdapter(
     private val listaPuntos: List<Punto>
 ) : RecyclerView.Adapter<RankingAdapter.RankingViewHolder>() {
 
+    private val paleta = season.paleta
+
     inner class RankingViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val img: ImageView = view.findViewById(R.id.img)
         val name: TextView = view.findViewById(R.id.name)
         val puntuacion: TextView = view.findViewById(R.id.puntuacion)
         val celdas: LinearLayout = view.findViewById(R.id.dynamicCellsContainer)
+    }
+
+    private var scaleFactor = 1f
+
+    fun setScaleFactor(factor: Float) {
+        scaleFactor = factor
+        notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RankingViewHolder {
@@ -50,6 +62,7 @@ class RankingAdapter(
     override fun onBindViewHolder(holder: RankingViewHolder, position: Int) {
         holder.celdas.removeAllViews()
 
+        Log.d("TablaRanking", "PALETA $paleta")
         if (getItemViewType(position) == VIEW_TYPE_HEADER) {
             holder.name.text = ""
             holder.puntuacion.text = ""
@@ -62,18 +75,39 @@ class RankingAdapter(
 
         val reina = reinas[position - 1]
         Log.i("AdapterRanking", "Reina ${reina.nombre}")
-        Glide.with(holder.itemView.context)
-            .load(reina.imagen_url)
-            .error(R.drawable.queen_not_found)
-            .into(holder.img)
-
+        reina.bindImg(holder.img, holder.itemView)
         holder.name.text = reina.nombre
         holder.puntuacion.text = String.format("%.3f", reina.puntuacionMedia ?: 0f)
+
+        paleta?.let {
+            val fondo = Color.parseColor(it.dominante)
+            val textoColor = if (Utils().esColorOscuro(it.dominante)) Color.WHITE else Color.BLACK
+
+            holder.name.setBackgroundColor(fondo)
+            holder.name.setTextColor(textoColor)
+
+            holder.puntuacion.setBackgroundColor(fondo)
+            holder.puntuacion.setTextColor(textoColor)
+
+            holder.itemView.setBackgroundColor(it.suave.toColorInt())
+        }
 
         season.capitulos?.forEachIndexed  { index, _ ->
             val texto = reina.puntuaciones?.getOrNull(index)?.texto ?: ""
             Log.i("AdapterRanking", "Celda $index: $texto")
             inflarCelda(holder, texto, index, position)
+        }
+
+        // Ajusta tamaño texto cabecera y filas para zoom:
+        val baseTextSizeName = 16f
+        val baseTextSizePuntuacion = 14f
+        holder.name.textSize = baseTextSizeName * scaleFactor
+        holder.puntuacion.textSize = baseTextSizePuntuacion * scaleFactor
+
+        // Para las celdas dinámicas (TextViews dentro de celdas):
+        for (i in 0 until holder.celdas.childCount) {
+            val celda = holder.celdas.getChildAt(i) as? TextView
+            celda?.textSize = 12f * scaleFactor
         }
     }
 
@@ -83,26 +117,33 @@ class RankingAdapter(
         return if (position == 0) VIEW_TYPE_HEADER else VIEW_TYPE_NORMAL
     }
 
-    private fun inflarCeldaHeader(holder: RankingViewHolder, text: String){
+    private fun inflarCeldaHeader(holder: RankingViewHolder, text: String) {
         val celda = LayoutInflater.from(holder.itemView.context)
             .inflate(R.layout.item_celda, holder.celdas, false) as TextView
 
+        val fondo = paleta?.alternativo?.toColorInt() ?: Color.LTGRAY // color por defecto si no hay paleta
+        val colorTexto = if (Utils().esColorOscuro(paleta?.alternativo ?: "#CCCCCC")) Color.WHITE else Color.BLACK
+
         celda.text = text
+        celda.setTextColor(colorTexto)
+        celda.setBackgroundColor(fondo)
+
         holder.celdas.addView(celda)
     }
+
 
     @OptIn(UnstableApi::class)
     private fun inflarCelda(holder: RankingViewHolder, text: String, capIndex: Int, position: Int) {
         val inflater = LayoutInflater.from(holder.itemView.context)
         val celda = inflater.inflate(R.layout.item_punto, holder.celdas, false) as TextView
         celda.text = text
-        celda.setBackgroundColor(colorParaTexto(text))
+        celda.setBackgroundColor(colorParaTexto(text, paleta))
         celda.setOnClickListener {
             try {
                 if (listaPuntos.isNotEmpty()) {
                     mostrarBottomSheetPuntos(listaPuntos, holder.itemView.context) { seleccionada ->
                         celda.text = seleccionada.texto
-                        celda.setBackgroundColor(colorParaTexto(seleccionada.texto))
+                        celda.setBackgroundColor(colorParaTexto(seleccionada.texto, paleta))
                         val reinaActual = reinas[position - 1]
 
                         if (reinaActual.puntuaciones == null) {
@@ -116,7 +157,7 @@ class RankingAdapter(
 
                         puntos[capIndex] = seleccionada
 
-                        val valores = puntos.filterNotNull().mapNotNull { it.valor }
+                        val valores = puntos.filterNotNull().filter { it.texto != "NA" }.mapNotNull { it.valor }
                         reinaActual.puntuacionMedia = if (valores.isNotEmpty()) valores.average().toFloat() else 0f
 
                         // Reordenar la lista de reinas
@@ -178,7 +219,7 @@ class RankingAdapter(
         dialog.show()
     }
 
-    private fun colorParaTexto(text: String): Int {
+    private fun colorParaTexto(text: String, paleta: ColorPalette?): Int {
         return when (text.uppercase()) {
             "WIN"   -> "#FFD700".toColorInt() // Dorado
             "TOP2"  -> "#41cf67".toColorInt()
@@ -188,7 +229,7 @@ class RankingAdapter(
             "BTM"   -> "#e06666".toColorInt() // Rojo claro
             "ELIM"  -> "#d90000".toColorInt() // Rojo oscuro
             "WINNER"-> "#ffff00".toColorInt()
-            else    -> Color.TRANSPARENT                 // Por defecto
+            else    -> paleta?.suave?.toColorInt() ?: Color.LTGRAY                 // Por defecto
         }
     }
 
