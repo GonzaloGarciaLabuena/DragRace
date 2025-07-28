@@ -5,13 +5,10 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 
-import com.google.firebase.firestore.FirebaseFirestore
-import com.gonchimonchi.dragrace.Reina
-import com.gonchimonchi.dragrace.Season
+import com.gonchimonchi.dragrace.classes.Reina
 import com.gonchimonchi.dragrace.calls.*
 
 import androidx.lifecycle.viewModelScope
-import com.gonchimonchi.dragrace.Punto
 import kotlinx.coroutines.launch
 
 class ReinaViewModel (): ViewModel() {

@@ -1,38 +1,27 @@
 package com.gonchimonchi.dragrace.activity
 
 import TemporadaAdapter
-import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import com.gonchimonchi.dragrace.R
-import android.widget.Button
 import android.widget.EditText
-import android.widget.ImageView
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
-import com.bumptech.glide.Glide
 import com.gonchimonchi.dragrace.viewmodel.DropboxViewModel
 import com.gonchimonchi.dragrace.viewmodel.ReinaViewModel
 import com.gonchimonchi.dragrace.viewmodel.TemporadaViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.io.File
-import android.util.Log
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.gonchimonchi.dragrace.Reina
-import com.gonchimonchi.dragrace.Season
+import com.gonchimonchi.dragrace.classes.Reina
+import com.gonchimonchi.dragrace.classes.Season
 import com.gonchimonchi.dragrace.adapter.DeleteReinaAdapter
-import com.gonchimonchi.dragrace.adapter.RankingAdapter
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import kotlinx.coroutines.withContext
 import kotlin.jvm.java
 
 class DeleteReinaActivity : AppCompatActivity() {
@@ -58,8 +47,8 @@ class DeleteReinaActivity : AppCompatActivity() {
         temporadaViewModel.obtenerSeasonsConReinas()
         temporadaViewModel.seasonCompleta.observe(this) { listaSeasons ->
             reinasCargadas = listaSeasons
-                .flatMap { it.reinas.orEmpty() }
-                .sortedBy { it.nombre?.lowercase() }
+                .flatMap { it.reinas }
+                .sortedBy { it.nombre.lowercase() }
             temporadasCargadas = listaSeasons
             cargarLista(reinasCargadas)
         }
@@ -68,7 +57,7 @@ class DeleteReinaActivity : AppCompatActivity() {
             override fun afterTextChanged(s: Editable?) {
                 val texto = s.toString().lowercase().trim()
                 val reinasFiltradas = reinasCargadas.filter {
-                    it.nombre?.lowercase()?.contains(texto) == true
+                    it.nombre.lowercase().contains(texto) == true
                 }
                 cargarLista(reinasFiltradas)
             }

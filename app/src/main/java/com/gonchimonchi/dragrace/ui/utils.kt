@@ -8,9 +8,9 @@ import androidx.palette.graphics.Palette
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
-import com.gonchimonchi.dragrace.ColorPalette
-import com.gonchimonchi.dragrace.Season
-import com.gonchimonchi.dragrace.toHex
+import com.gonchimonchi.dragrace.classes.ColorPalette
+import com.gonchimonchi.dragrace.classes.Season
+import com.gonchimonchi.dragrace.classes.toHex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient

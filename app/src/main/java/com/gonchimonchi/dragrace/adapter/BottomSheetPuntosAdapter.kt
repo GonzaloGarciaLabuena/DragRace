@@ -3,8 +3,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.gonchimonchi.dragrace.Punto
-import com.gonchimonchi.dragrace.Season
+import com.gonchimonchi.dragrace.classes.Punto
 
 class PuntosAdapter(
     private val listPuntos: List<Punto>,

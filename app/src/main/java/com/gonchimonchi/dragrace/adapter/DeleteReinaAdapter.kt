@@ -1,23 +1,14 @@
 package com.gonchimonchi.dragrace.adapter
 
-import android.graphics.Color
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.gonchimonchi.dragrace.Punto
 import com.gonchimonchi.dragrace.R
-import com.gonchimonchi.dragrace.Reina
-import com.gonchimonchi.dragrace.Season
-import com.gonchimonchi.dragrace.calls.deleteReina
-import com.gonchimonchi.dragrace.viewmodel.ReinaViewModel
-import com.gonchimonchi.dragrace.viewmodel.TemporadaViewModel
+import com.gonchimonchi.dragrace.classes.Reina
 
 class DeleteReinaAdapter(
     private val reinas: List<Reina>,

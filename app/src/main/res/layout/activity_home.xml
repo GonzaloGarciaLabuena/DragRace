@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/homeRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#ECECEC">
+
+    <!-- Vista de carga -->
+    <LinearLayout
+        android:id="@+id/progressBarLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="visible">
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cargando datos..."
+            android:layout_marginTop="12dp" />
+    </LinearLayout>
+
+    <!-- Contenido principal -->
+    <LinearLayout
+        android:id="@+id/contenidoLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:gravity="center"
+        android:visibility="gone">
+
+        <Button
+            android:id="@+id/btnVerRanking"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Ver ranking" />
+
+        <Button
+            android:id="@+id/btnAddReina"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Añadir reina"
+            android:layout_marginTop="16dp" />
+
+        <Button
+            android:id="@+id/btnEliminarReinas"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Eliminar reinas"
+            android:layout_marginTop="16dp" />
+
+        <Button
+            android:id="@+id/btnGestionarTemporadas"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Gestionar temporadas"
+            android:layout_marginTop="16dp" />
+    </LinearLayout>
+
+</FrameLayout>

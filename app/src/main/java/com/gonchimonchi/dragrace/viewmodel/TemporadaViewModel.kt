@@ -4,16 +4,14 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.map
 
 import com.google.firebase.firestore.FirebaseFirestore
-import com.gonchimonchi.dragrace.Reina
-import com.gonchimonchi.dragrace.Season
+import com.gonchimonchi.dragrace.classes.Reina
+import com.gonchimonchi.dragrace.classes.Season
 import com.gonchimonchi.dragrace.calls.*
 
 import androidx.lifecycle.viewModelScope
-import com.gonchimonchi.dragrace.ColorPalette
-import com.gonchimonchi.dragrace.Punto
+import com.gonchimonchi.dragrace.classes.ColorPalette
 import kotlinx.coroutines.launch
 
 class TemporadaViewModel (): ViewModel() {
@@ -58,6 +56,11 @@ class TemporadaViewModel (): ViewModel() {
         }
     }
 
+    // Esta es la versión suspend que puedes llamar desde HomeActivity
+    suspend fun cargarSeasonsConReinas() {
+        _seasonCompleta.value = getSeasonsPoblada()
+    }
+
     fun obtenerSeasonsConReinas() {
         viewModelScope.launch {
             ->
@@ -89,7 +92,7 @@ class TemporadaViewModel (): ViewModel() {
             reina.id?.let { id ->
                 val puntos = getPuntosReina(season.id.toString(), id)
                 Log.i("BBDD", "✅ Reina $id actualizada con puntuaciones $puntos")
-                reina.copy(puntuaciones = puntos?.toMutableList())
+                reina.copy(puntuaciones = puntos.toMutableList())
             }
         }
         return listaActualizada.toMutableList()

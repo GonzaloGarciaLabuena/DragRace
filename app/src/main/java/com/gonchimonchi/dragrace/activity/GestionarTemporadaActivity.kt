@@ -3,8 +3,6 @@ package com.gonchimonchi.dragrace.activity
 import TemporadaAdapter
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
@@ -12,23 +10,17 @@ import com.gonchimonchi.dragrace.R
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.Toast
-import com.gonchimonchi.dragrace.viewmodel.DropboxViewModel
-import com.gonchimonchi.dragrace.viewmodel.ReinaViewModel
 import com.gonchimonchi.dragrace.viewmodel.TemporadaViewModel
 import kotlinx.coroutines.launch
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.gonchimonchi.dragrace.Reina
-import com.gonchimonchi.dragrace.Season
+import com.gonchimonchi.dragrace.classes.Season
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlin.jvm.java
 import com.gonchimonchi.dragrace.adapter.GestionarCapituloAdapter
 import android.util.Log
-import android.view.View
-import android.graphics.Color
 import com.gonchimonchi.dragrace.ui.Utils
 import androidx.core.graphics.toColorInt
 
@@ -78,7 +70,7 @@ class GestionarTemporadaActivity : AppCompatActivity() {
                     btnGuardar.text = "Actualizar temporada"
 
                     capitulos.clear()
-                    seleccionada.capitulos?.let { capitulos.addAll(it) }
+                    seleccionada.capitulos.let { capitulos.addAll(it) }
                     capituloAdapter.notifyDataSetChanged()
                     ajustarAlturaRecyclerView(recyclerViewCapitulos, capitulos.size)
                     lifecycleScope.launch {
@@ -203,8 +195,8 @@ class GestionarTemporadaActivity : AppCompatActivity() {
             seasonYear.text.clear()
             seasonFranquicia.text.clear()
             filterSeason.text = "Buscar temporada"
-            temporadaSeleccionada = Season()
-            findViewById<Button>(R.id.guardarRankingBtn).text = "Guardar temporada"
+            temporadaSeleccionada = null
+            btnGuardar.text = "Guardar temporada"
             capitulos.clear()
             capituloAdapter.notifyDataSetChanged()
             ajustarAlturaRecyclerView(recyclerViewCapitulos, capitulos.size)

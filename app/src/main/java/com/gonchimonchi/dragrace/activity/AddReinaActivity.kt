@@ -18,7 +18,6 @@ import com.bumptech.glide.Glide
 import com.gonchimonchi.dragrace.viewmodel.DropboxViewModel
 import com.gonchimonchi.dragrace.viewmodel.ReinaViewModel
 import com.gonchimonchi.dragrace.viewmodel.TemporadaViewModel
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
@@ -27,7 +26,7 @@ import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.gonchimonchi.dragrace.Season
+import com.gonchimonchi.dragrace.classes.Season
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.withContext
 import org.json.JSONObject

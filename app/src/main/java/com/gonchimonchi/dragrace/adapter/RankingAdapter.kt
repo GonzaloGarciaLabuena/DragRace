@@ -1,10 +1,8 @@
 package com.gonchimonchi.dragrace.adapter
 
 import PuntosAdapter
-import TemporadaAdapter
 import android.content.Context
 import android.graphics.Color
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,16 +13,15 @@ import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.gonchimonchi.dragrace.Punto
+import com.gonchimonchi.dragrace.classes.Punto
 import com.gonchimonchi.dragrace.R
-import com.gonchimonchi.dragrace.Reina
-import com.gonchimonchi.dragrace.Season
+import com.gonchimonchi.dragrace.classes.Reina
+import com.gonchimonchi.dragrace.classes.Season
 import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
 import androidx.core.graphics.toColorInt
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.gonchimonchi.dragrace.ColorPalette
+import com.gonchimonchi.dragrace.classes.ColorPalette
 import com.gonchimonchi.dragrace.ui.Utils
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlin.collections.filter
@@ -79,7 +76,7 @@ class RankingAdapter(
         holder.name.text = reina.nombre
         holder.puntuacion.text = String.format("%.3f", reina.puntuacionMedia ?: 0f)
 
-        paleta?.let {
+        paleta.let {
             val fondo = Color.parseColor(it.dominante)
             val textoColor = if (Utils().esColorOscuro(it.dominante)) Color.WHITE else Color.BLACK
 
@@ -92,8 +89,8 @@ class RankingAdapter(
             holder.itemView.setBackgroundColor(it.suave.toColorInt())
         }
 
-        season.capitulos?.forEachIndexed  { index, _ ->
-            val texto = reina.puntuaciones?.getOrNull(index)?.texto ?: ""
+        season.capitulos.forEachIndexed  { index, _ ->
+            val texto = reina.puntuaciones.getOrNull(index)?.texto ?: ""
             Log.i("AdapterRanking", "Celda $index: $texto")
             inflarCelda(holder, texto, index, position)
         }
@@ -121,8 +118,8 @@ class RankingAdapter(
         val celda = LayoutInflater.from(holder.itemView.context)
             .inflate(R.layout.item_celda, holder.celdas, false) as TextView
 
-        val fondo = paleta?.alternativo?.toColorInt() ?: Color.LTGRAY // color por defecto si no hay paleta
-        val colorTexto = if (Utils().esColorOscuro(paleta?.alternativo ?: "#CCCCCC")) Color.WHITE else Color.BLACK
+        val fondo = paleta.alternativo.toColorInt()
+        val colorTexto = if (Utils().esColorOscuro(paleta.alternativo)) Color.WHITE else Color.BLACK
 
         celda.text = text
         celda.setTextColor(colorTexto)
@@ -146,18 +143,11 @@ class RankingAdapter(
                         celda.setBackgroundColor(colorParaTexto(seleccionada.texto, paleta))
                         val reinaActual = reinas[position - 1]
 
-                        if (reinaActual.puntuaciones == null) {
-                            reinaActual.puntuaciones = mutableListOf()
-                        }
-                        val puntos = reinaActual.puntuaciones!!
-
-                        while (puntos.size <= capIndex) {
-                            puntos.add(null)
-                        }
+                        val puntos = reinaActual.puntuaciones
 
                         puntos[capIndex] = seleccionada
 
-                        val valores = puntos.filterNotNull().filter { it.texto != "NA" }.mapNotNull { it.valor }
+                        val valores = puntos.filter { it.texto != "NA" }.map { it.valor }
                         reinaActual.puntuacionMedia = if (valores.isNotEmpty()) valores.average().toFloat() else 0f
 
                         // Reordenar la lista de reinas
@@ -181,7 +171,7 @@ class RankingAdapter(
                     val puntos = reinaActual.puntuaciones
 
                     if (puntos != null && capIndex < puntos.size) {
-                        puntos[capIndex] = null // o removeAt(capIndex), según tu lógica
+                        puntos[capIndex] = Punto() // o removeAt(capIndex), según tu lógica
                     }
 
                     // Recalcular media

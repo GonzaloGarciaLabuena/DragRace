@@ -1,382 +1,189 @@
 package com.gonchimonchi.dragrace.calls
 
 import androidx.annotation.OptIn
-import com.google.firebase.firestore.FirebaseFirestore
 import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
-import com.gonchimonchi.dragrace.ColorPalette
-import com.gonchimonchi.dragrace.Punto
-import com.gonchimonchi.dragrace.Reina
-import com.gonchimonchi.dragrace.Season
-import com.google.firebase.firestore.FieldValue
-import kotlinx.coroutines.tasks.await
-import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.*
+import com.gonchimonchi.dragrace.classes.ColorPalette
+import com.gonchimonchi.dragrace.classes.Punto
+import com.gonchimonchi.dragrace.classes.Reina
+import com.gonchimonchi.dragrace.classes.Season
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.tasks.await
+
+/** --- CATEGORÍAS / PUNTOS --- */
 
 @OptIn(UnstableApi::class)
 suspend fun getPuntosName(): List<Punto> {
-    val firestore = FirebaseFirestore.getInstance()
     return try {
-        val result = firestore.collection("puntos")
+        FirebaseFirestore.getInstance().collection("puntos")
             .orderBy("valor", Query.Direction.DESCENDING)
-            .get()
-            .await()
-        Log.d("FirestoreQuery", "Consulta exitosa, ${result.size()} documentos obtenidos")
-        result.documents.map { doc ->
-            Punto(
-                texto = doc.id,
-                valor = (doc.get("valor") as? Number)?.toFloat() ?: 0f
-            )
-        }
+            .get().await()
+            .documents.map { Punto.fromDocument(it) }
     } catch (e: Exception) {
-        Log.e("Firestore", "Error al cargar opciones", e)
+        Log.e("Firestore", "Error al cargar puntos", e)
         emptyList()
     }
 }
 
 @OptIn(UnstableApi::class)
-suspend fun getSeasonData(seasonName: String): Season {
-    val firestore = FirebaseFirestore.getInstance()
-    val result = firestore.collection("season")
-        .document(seasonName)
-        .get()
-        .await()
+suspend fun getPuntosReina(season: String, idReina: String): List<Punto> = coroutineScope {
+    try {
+        val doc = FirebaseFirestore.getInstance().collection("ranking")
+            .document("dragO'Nita").get().await()
 
-    if (!result.exists()) {
-        throw IllegalStateException("La temporada '$seasonName' no existe en Firestore.")
+        val temporadaMap = doc.data?.get(season) as? Map<String, List<String>>
+        val rawPuntos = temporadaMap?.get(idReina) ?: return@coroutineScope emptyList()
+
+        val categorias = getPuntosName()
+        rawPuntos.mapNotNull { textoRaw ->
+            val texto = textoRaw.lowercase().trim()
+            val match = categorias.find { it.texto.lowercase().trim() == texto }
+            match?.let { Punto(it.texto, it.valor) }
+        }
+    } catch (e: Exception) {
+        Log.e("Firestore", "Error al cargar puntuaciones de $idReina", e)
+        emptyList()
     }
-
-    return result.toObject(Season::class.java)
-        ?: throw IllegalStateException("No se pudo convertir el documento a Season.")
 }
 
+/** --- REINAS --- */
 
 @OptIn(UnstableApi::class)
 suspend fun getReinasByIds(ids: List<String>): List<Reina> = coroutineScope {
-    val firestore = FirebaseFirestore.getInstance()
     try {
-        val deferreds = ids.map { id ->
+        ids.map { id ->
             async {
-                val doc = firestore.collection("reina")
-                    .document(id)
-                    .get()
-                    .await()
-                Log.i("Firestore", "Reina con id encontrada $doc")
-                doc.toObject(Reina::class.java)?.apply { this.id = id }
+                val doc = FirebaseFirestore.getInstance().collection("reina")
+                    .document(id).get().await()
+                Reina.fromDocument(doc)
             }
-        }
-        deferreds.awaitAll().filterNotNull()
+        }.awaitAll().filterNotNull()
     } catch (e: Exception) {
         Log.e("Firestore", "Error al obtener reinas", e)
         emptyList()
     }
 }
 
-
 @OptIn(UnstableApi::class)
-suspend fun getPuntosReina(season: String, idReina: String): List<Punto> = coroutineScope {
-    val firestore = FirebaseFirestore.getInstance()
-    try {
-        val result = firestore.collection("ranking")
-            .document("dragO'Nita")
-            .get()
-            .await()
-
-        if (!result.exists()) {
-            Log.w("FirestoreQuery", "❌ Documento de temporada 'dragO'Nita' no existe")
-            return@coroutineScope emptyList()
-        }
-
-        val data = result.data
-        Log.i("FirestoreQuery", "📄 Documento completo: $data")
-
-        // Submapa de la temporada específica
-        val temporadaMap = data?.get(season) as? Map<String, List<String>>
-        Log.i("FirestoreQuery", "🗂️ Submapa de temporada '$season': $temporadaMap")
-
-        // Lista de strings de puntuaciones asociada a la reina
-        val puntosReina = temporadaMap?.get(idReina) as? List<String>
-        Log.i("FirestoreQuery", "✅ Lista cruda para reina '$idReina': $puntosReina")
-
-        // Obtener categorías y valores desde Firestore
-        val categorias = getPuntosName() // devuelve List<Option> con (texto, valor)
-        Log.i("FirestoreQuery", "📘 Categorías disponibles: $categorias")
-
-        // Combinar cada string con su valor
-        val puntos = puntosReina?.mapNotNull { textoRaw ->
-            val texto = textoRaw?.toString()?.lowercase()?.trim()
-            val match = categorias.find { it.texto.lowercase().trim() == texto }
-            match?.let {
-                Punto(
-                    texto = it.texto,
-                    valor = it.valor ?: 0f // Asume que it.valor es Float?
-                )
-            }
-        } ?: emptyList()
-
-        Log.d("FirestoreQuery", "🎯 Lista final de objetos Punto: $puntos")
-        puntos
-    } catch (e: Exception) {
-        Log.e("Firestore", "🚨 Error al cargar puntuaciones de $idReina en $season", e)
-        emptyList()
-    }
-}
-
-@OptIn(UnstableApi::class)
-fun addReina(
-    nombre: String,
-    imagenUrl: String,
-    seasonName: String,
-    onResult: (Result<String>) -> Unit
-) {
+fun addReina(nombre: String, imagenUrl: String, seasonName: String, onResult: (Result<String>) -> Unit) {
     val db = FirebaseFirestore.getInstance()
-
-    val datosReina = hashMapOf(
-        "nombre" to nombre,
-        "imagen_url" to imagenUrl,
-        "temporada" to seasonName
-    )
+    val datosReina = hashMapOf("nombre" to nombre, "imagen_url" to imagenUrl, "temporada" to seasonName)
 
     db.collection("reina")
         .add(datosReina)
-        .addOnSuccessListener { documentReference ->
-            val reinaId = documentReference.id
-            Log.d("Firestore", "Nueva reina info[ID: $reinaId, Nombre: $nombre, Season: $seasonName]")
-            // Llamada a actualizar temporada
-            actualizarSeasonConReina(seasonName, reinaId) { resultActualizar ->
-                if (resultActualizar.isSuccess) {
-                    onResult(Result.success(reinaId))
-                } else {
-                    onResult(Result.failure(resultActualizar.exceptionOrNull() ?: Exception("Error desconocido")))
-                }
+        .addOnSuccessListener { ref ->
+            actualizarSeasonConReina(seasonName, ref.id) {
+                if (it.isSuccess) onResult(Result.success(ref.id))
+                else onResult(Result.failure(it.exceptionOrNull() ?: Exception("Error desconocido")))
             }
         }
-        .addOnFailureListener { e ->
-            onResult(Result.failure(e))
-        }
+        .addOnFailureListener { onResult(Result.failure(it)) }
 }
 
 @OptIn(UnstableApi::class)
-fun deleteReina(
-    reina: Reina
-) {
-    val db = FirebaseFirestore.getInstance()
-
-    db.collection("reina").document(reina.id.toString())
+fun deleteReina(reina: Reina) {
+    FirebaseFirestore.getInstance().collection("reina").document(reina.id)
         .delete()
         .addOnSuccessListener {
-            Log.d("Firestore", "Reina ${reina.nombre} eliminada")
-
-            // Ahora eliminarla de la temporada
             deleteReinaDeSeason(reina)
         }
-        .addOnFailureListener { e ->
-            Log.e("Firestore", "Error al eliminar reina", e)
-        }
+        .addOnFailureListener { Log.e("Firestore", "Error al eliminar reina", it) }
 }
 
+/** --- TEMPORADAS --- */
 
 @OptIn(UnstableApi::class)
-fun actualizarSeasonConReina(
-    seasonName: String,
-    reinaId: String,
-    onResult: (Result<Unit>) -> Unit
-) {
-    val db = FirebaseFirestore.getInstance()
-    db.collection("season")
-        .document(seasonName)
-        .update("reinas", FieldValue.arrayUnion(reinaId))
-        .addOnSuccessListener {
-            Log.d("Firestore", "Reina añadida a la temporada $seasonName")
-            onResult(Result.success(Unit))
-        }
-        .addOnFailureListener { e ->
-            Log.e("Firestore", "Error al actualizar la temporada", e)
-            onResult(Result.failure(e))
-        }
-}
-
-@OptIn(UnstableApi::class)
-fun deleteReinaDeSeason(
-    reina: Reina
-){
-    val db = FirebaseFirestore.getInstance()
-    db.collection("season")
-        .document(reina.temporada.toString())
-        .update("reinas", FieldValue.arrayRemove(reina.id))
-        .addOnSuccessListener {
-            Log.d("Firestore", "Reina ${reina.nombre} eliminada de temporada ${reina.temporada}")
-        }
-        .addOnFailureListener { e ->
-            Log.e("Firestore", "Error al actualizar la temporada", e)
-        }
-}
-
-@OptIn(UnstableApi::class)
-suspend fun getSeason(season: Season): List<Season> = coroutineScope {
-    val firestore = FirebaseFirestore.getInstance()
-
-    try {
-        val result = firestore.collection("season")
-            .document(season.id.toString())
-            .get()
-            .await()
-
-        val franquicia = result.getString("franquicia")
-        val nombre = result.getString("nombre")
-        val year = result.getLong("year")?.toInt()
-        val capitulos = result.get("capitulos") as? List<String>
-        val listaIds = result.get("reinas") as? List<String> ?: emptyList()
-
-        // Ahora carga las reinas con sus datos completos
-        val reinas = getReinasByIds(listaIds)
-        Log.d("TablaRanking", "RESULT CALL ${result}")
-        val mapaColores = result.get("paleta") as? Map<String, String>
-        val paleta = mapaColores?.let {
-            ColorPalette(
-                dominante = it["dominante"] ?: "#000000",
-                vibrante = it["vibrante"] ?: "#000000",
-                suave = it["suave"] ?: "#000000",
-                oscuro = it["oscuro"] ?: "#000000",
-                alternativo = it["alternativo"] ?: "#000000"
-            )
-        }
-        Log.d("TablaRanking", "PALETA CALL ${paleta}")
-        val seasonObj = Season(
-            id = result.id,
-            franquicia = franquicia,
-            nombre = nombre,
-            year = year,
-            capitulos = capitulos,
-            paleta = paleta,
-            reinas = reinas as MutableList<Reina>? // Aquí sí puedes poner List<Reina>
-        )
-        Log.i("FirestoreQuery", "📘 Temporada recuperada: ${seasonObj}")
-        listOf(seasonObj)
-
-    } catch (e: Exception) {
-        Log.e("Firestore", "Error al obtener temporada", e)
-        emptyList()
-    }
+suspend fun getSeasonData(seasonName: String): Season {
+    val doc = FirebaseFirestore.getInstance().collection("season")
+        .document(seasonName).get().await()
+    if (!doc.exists()) throw IllegalStateException("La temporada '$seasonName' no existe")
+    return Season.fromDocument(doc)
 }
 
 @OptIn(UnstableApi::class)
 suspend fun getSeasonsPoblada(): List<Season> = coroutineScope {
-    val firestore = FirebaseFirestore.getInstance()
     try {
-        val result = firestore.collection("season")
-            .orderBy("year", Query.Direction.DESCENDING)
-            .get()
-            .await()
-
-        Log.i("FirestoreQuery", "📘 Temporadas disponibles: ${result.size()}")
-
-        result.documents.mapNotNull { doc ->
-            // Recuperar lista de IDs desde el documento
-            val listaIds = doc.get("reinas") as? List<String> ?: emptyList()
-
-            // Obtener reinas completas con puntuaciones
-            val reinasPobladas = getReinasByIds(listaIds)
-
-            // Crear objeto Season manualmente
-            val season = Season(
-                id = doc.id,
-                franquicia = doc.getString("franquicia"),
-                nombre = doc.getString("nombre"),
-                year = doc.getLong("year")?.toInt(),
-                capitulos = doc.get("capitulos") as? List<String>,
-                reinas = reinasPobladas as MutableList<Reina>?
-            )
-            Log.i("FirestoreQuery", "📘 Season cargada: ${season}")
-            season
-        }
+        FirebaseFirestore.getInstance().collection("season")
+            .orderBy("year", Query.Direction.DESCENDING).get().await()
+            .documents.mapNotNull { doc ->
+                val reinas = getReinasByIds(doc.get("reinas") as? List<String> ?: emptyList())
+                Season.fromDocument(doc, reinas.toMutableList())
+            }
     } catch (e: Exception) {
         Log.e("Firestore", "Error al obtener temporadas", e)
         emptyList()
     }
 }
-
 
 @OptIn(UnstableApi::class)
 suspend fun getSeasonsVacia(): List<Season> = coroutineScope {
-    val firestore = FirebaseFirestore.getInstance()
     try {
-        val result = firestore.collection("season")
-            .orderBy("year", Query.Direction.DESCENDING)
-            .get()
-            .await()
-
-        Log.i("FirestoreQuery", "📘 Temporadas disponibles: ${result.size()}")
-
-        result.documents.mapNotNull { doc ->
-            val mapaColores = doc.get("paleta") as? Map<String, String>
-            val paleta = mapaColores?.let {
-                ColorPalette(
-                    dominante = it["dominante"] ?: "#000000",
-                    vibrante = it["vibrante"] ?: "#000000",
-                    suave = it["suave"] ?: "#000000",
-                    oscuro = it["oscuro"] ?: "#000000",
-                    alternativo = it["alternativo"] ?: "#000000"
-                )
-            }
-
-            Season(
-                id = doc.id,
-                franquicia = doc.getString("franquicia"),
-                nombre = doc.getString("nombre"),
-                year = doc.getLong("year")?.toInt(),
-                capitulos = doc.get("capitulos") as? List<String>,
-                paleta = paleta,
-                reinas = null // o puedes poner `emptyList()`
-            )
-        }
+        FirebaseFirestore.getInstance().collection("season")
+            .orderBy("year", Query.Direction.DESCENDING).get().await()
+            .documents.mapNotNull { Season.fromDocument(it) }
     } catch (e: Exception) {
-        Log.e("Firestore", "Error al obtener temporadas", e)
+        Log.e("Firestore", "Error al obtener temporadas vacías", e)
         emptyList()
     }
 }
 
 @OptIn(UnstableApi::class)
-fun actualizarRanking(
-    reinas: MutableList<Reina>,
-    season: Season,
-    onResult: (Result<String>) -> Unit
-) {
-    val db = FirebaseFirestore.getInstance()
-    val rankingTemporada = mutableMapOf<String, Any>()
+suspend fun cargarPuntuacionesPorTemporadas(temporadas: List<Season>, categorias: List<Punto>): List<Season> = coroutineScope {
+    temporadas.map { temporada ->
+        try {
+            val doc = FirebaseFirestore.getInstance().collection("ranking")
+                .document(temporada.id).get().await()
 
-    for (reina in reinas) {
-        val listaTexto = reina.puntuaciones
-            ?.filterNotNull()
-            ?.mapNotNull { it.texto?.toString() } // Convierte a texto
-            ?: emptyList()
-
-        rankingTemporada[reina.id.toString()] = listaTexto
+            val temporadaMap = doc.data?.get(temporada.id) as? Map<String, List<String>>
+            temporada.reinas.forEach { reina ->
+                val puntosRaw = temporadaMap?.get(reina.id) ?: emptyList()
+                reina.puntuaciones = puntosRaw.map { raw ->
+                    val texto = raw.lowercase().trim()
+                    val match = categorias.find { it.texto.lowercase().trim() == texto }
+                    Punto(match?.texto ?: "", match?.valor ?: 0f)
+                }.toMutableList()
+            }
+        } catch (e: Exception) {
+            Log.e("Firestore", "Error cargando puntos de temporada ${temporada.id}", e)
+        }
+        temporada
     }
+}
 
-    db.collection("ranking")
-        .document("dragO'Nita")
-        .update(mapOf(season.id to rankingTemporada))
-        .addOnSuccessListener {
-            Log.d("Firestore", "Ranking actualizado")
-            onResult(Result.success("Ranking actualizado"))
-        }
-        .addOnFailureListener { e ->
-            Log.d("Firestore", "Error al actualizar ranking: ${e.message}")
-            onResult(Result.failure(e))
-        }
+/** --- ACTUALIZACIONES --- */
+
+@OptIn(UnstableApi::class)
+fun actualizarSeasonConReina(seasonName: String, reinaId: String, onResult: (Result<Unit>) -> Unit) {
+    FirebaseFirestore.getInstance().collection("season")
+        .document(seasonName)
+        .update("reinas", FieldValue.arrayUnion(reinaId))
+        .addOnSuccessListener { onResult(Result.success(Unit)) }
+        .addOnFailureListener { onResult(Result.failure(it)) }
 }
 
 @OptIn(UnstableApi::class)
-fun updateCapituloTemporada(
-    season: Season,
-    onResult: (Result<String>) -> Unit
-) {
-    val db = FirebaseFirestore.getInstance()
-    db.collection("season")
-        .document(season.id?: return)
+fun deleteReinaDeSeason(reina: Reina) {
+    FirebaseFirestore.getInstance().collection("season")
+        .document(reina.temporada).update("reinas", FieldValue.arrayRemove(reina.id))
+        .addOnSuccessListener {}
+        .addOnFailureListener { Log.e("Firestore", "Error al actualizar temporada", it) }
+}
+
+@OptIn(UnstableApi::class)
+fun actualizarPaletaTemporadaFB(seasonId: String, paleta: ColorPalette, onResult: (Result<Unit>) -> Unit) {
+    FirebaseFirestore.getInstance().collection("season").document(seasonId)
+        .update("paleta", paleta)
+        .addOnSuccessListener { onResult(Result.success(Unit)) }
+        .addOnFailureListener { onResult(Result.failure(it)) }
+}
+
+@OptIn(UnstableApi::class)
+fun updateCapituloTemporada(season: Season, onResult: (Result<String>) -> Unit) {
+    FirebaseFirestore.getInstance().collection("season")
+        .document(season.id)
         .update(
             mapOf(
                 "nombre" to season.nombre,
@@ -385,63 +192,23 @@ fun updateCapituloTemporada(
                 "capitulos" to season.capitulos
             )
         )
-        .addOnSuccessListener {
-            Log.d("Firestore", "Season actualizado")
-            onResult(Result.success("Season actualizado"))
-        }
-        .addOnFailureListener { e ->
-            Log.d("Firestore", "Error al actualizar ranking: ${e.message}")
-            onResult(Result.failure(e))
-        }
+        .addOnSuccessListener { onResult(Result.success("Season actualizado")) }
+        .addOnFailureListener { onResult(Result.failure(it)) }
 }
 
 @OptIn(UnstableApi::class)
-fun addNewTemporada(
-    season: Season,
-    idDocumento: String,
-    onResult: (Result<Season>) -> Unit
-) {
-    val db = FirebaseFirestore.getInstance()
-    val seasonMap = mapOf(
-        "franquicia" to season.franquicia,
-        "nombre" to season.nombre,
-        "reinas" to season.reinas,
-        "capitulos" to season.capitulos,
-        "year" to season.year
-    )
-    db.collection("season")
-        .document(idDocumento)
-        .set(seasonMap)
-        .addOnSuccessListener {
-            val seasonConId = season.copy(id = idDocumento)
-            onResult(Result.success(seasonConId))
-        }
-        .addOnFailureListener { e ->
-            Log.d("Firestore", "Error al crear temporada: ${e.message}")
-            onResult(Result.failure(e))
-        }
+fun actualizarRanking(reinas: MutableList<Reina>, season: Season, onResult: (Result<String>) -> Unit) {
+    val ranking = reinas.associate { it.id to it.puntuaciones.map { p -> p.texto } }
+
+    FirebaseFirestore.getInstance().collection("ranking")
+        .document("dragO'Nita")
+        .update(mapOf(season.id to ranking))
+        .addOnSuccessListener { onResult(Result.success("Ranking actualizado")) }
+        .addOnFailureListener { onResult(Result.failure(it)) }
 }
 
-fun actualizarPaletaTemporadaFB(
-    seasonId: String,
-    paleta: ColorPalette,
-    onResult: (Result<Unit>) -> Unit
-) {
-    val db = FirebaseFirestore.getInstance()
-    val docRef = db.collection("season").document(seasonId)
+/** --- UTILIDADES EXTRA --- */
 
-    docRef.update("paleta", paleta)
-        .addOnSuccessListener {
-            onResult(Result.success(Unit))
-        }
-        .addOnFailureListener { e ->
-            onResult(Result.failure(e))
-        }
-}
-
-
-
-///Funciones extraordinaraias ////
 fun copiarDocumento(
     db: FirebaseFirestore,
     coleccion: String,
@@ -449,23 +216,16 @@ fun copiarDocumento(
     idNuevo: String,
     onComplete: (Boolean, Exception?) -> Unit
 ) {
-    val docOriginalRef = db.collection(coleccion).document(idOriginal)
-    val docNuevoRef = db.collection(coleccion).document(idNuevo)
+    val docOriginal = db.collection(coleccion).document(idOriginal)
+    val docNuevo = db.collection(coleccion).document(idNuevo)
 
-    docOriginalRef.get()
-        .addOnSuccessListener { documentSnapshot ->
-            if (documentSnapshot.exists()) {
-                val data = documentSnapshot.data
-                if (data != null) {
-                    docNuevoRef.set(data)
-                        .addOnSuccessListener { onComplete(true, null) }
-                        .addOnFailureListener { e -> onComplete(false, e) }
-                } else {
-                    onComplete(false, Exception("Documento original sin datos"))
-                }
-            } else {
-                onComplete(false, Exception("Documento original no existe"))
-            }
+    docOriginal.get()
+        .addOnSuccessListener { snap ->
+            snap.data?.let {
+                docNuevo.set(it)
+                    .addOnSuccessListener { onComplete(true, null) }
+                    .addOnFailureListener { e -> onComplete(false, e) }
+            } ?: onComplete(false, Exception("Documento original sin datos"))
         }
-        .addOnFailureListener { e -> onComplete(false, e) }
+        .addOnFailureListener { onComplete(false, it) }
 }
